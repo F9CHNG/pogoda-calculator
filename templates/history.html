@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>История расчётов</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="card hero">
+            <div class="hero-topbar">
+                <div>
+                    <p class="eyebrow">USDT/RUB</p>
+                    <h1>История запросов</h1>
+                </div>
+                <a href="/" class="button button-secondary button-link">Новый расчёт</a>
+            </div>
+            <p class="lead">Последние 50 запросов хранятся только в памяти приложения. Новые записи находятся сверху.</p>
+        </section>
+
+        {% if history_items %}
+            {% for item in history_items %}
+            <section class="card history-card {% if item.error %}error-card{% endif %}">
+                <div class="history-meta">
+                    <span class="timestamp">{{ item.timestamp }}</span>
+                </div>
+
+                <div class="history-section">
+                    <div class="result-header result-header-tight">
+                        <h2>Входной текст</h2>
+                        <button type="button" class="button button-secondary button-small" onclick="copyNodeText('input-{{ loop.index0 }}', 'status-{{ loop.index0 }}')">Копировать вход</button>
+                    </div>
+                    <pre id="input-{{ loop.index0 }}" class="result-box result-box-compact">{{ item.input_text }}</pre>
+                </div>
+
+                <div class="history-section">
+                    <div class="result-header result-header-tight">
+                        <h2>{% if item.error %}Ошибка{% else %}Результат{% endif %}</h2>
+                        <button type="button" class="button button-secondary button-small" onclick="copyNodeText('output-{{ loop.index0 }}', 'status-{{ loop.index0 }}')">
+                            {% if item.error %}Копировать ошибку{% else %}Копировать результат{% endif %}
+                        </button>
+                    </div>
+                    <pre id="output-{{ loop.index0 }}" class="result-box {% if item.error %}error-box{% endif %}">{{ item.error or item.result }}</pre>
+                </div>
+
+                <div class="history-actions">
+                    <form action="/calculate" method="post" class="repeat-form">
+                        <textarea name="text" class="hidden-textarea">{{ item.input_text }}</textarea>
+                        <button type="submit" class="button button-primary button-small">Повторить запрос</button>
+                    </form>
+                </div>
+
+                <p id="status-{{ loop.index0 }}" class="copy-status" aria-live="polite"></p>
+            </section>
+            {% endfor %}
+        {% else %}
+        <section class="card">
+            <h2>История пока пуста</h2>
+            <p class="lead">Сделайте первый расчёт на главной странице, и он появится здесь.</p>
+        </section>
+        {% endif %}
+    </main>
+
+    <script>
+        function writeToClipboard(text, statusId) {
+            const statusNode = document.getElementById(statusId);
+            const showStatus = (message) => {
+                if (statusNode) {
+                    statusNode.textContent = message;
+                }
+            };
+
+            const fallbackCopy = () => {
+                const helper = document.createElement("textarea");
+                helper.value = text;
+                helper.setAttribute("readonly", "");
+                helper.style.position = "absolute";
+                helper.style.left = "-9999px";
+                document.body.appendChild(helper);
+                helper.select();
+                helper.setSelectionRange(0, helper.value.length);
+                const ok = document.execCommand("copy");
+                document.body.removeChild(helper);
+                showStatus(ok ? "Текст скопирован." : "Не удалось скопировать автоматически.");
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard
+                    .writeText(text)
+                    .then(() => showStatus("Текст скопирован."))
+                    .catch(() => fallbackCopy());
+                return;
+            }
+
+            fallbackCopy();
+        }
+
+        function copyNodeText(nodeId, statusId) {
+            const node = document.getElementById(nodeId);
+            if (!node) {
+                return;
+            }
+            writeToClipboard(node.innerText, statusId);
+        }
+    </script>
+</body>
+</html>

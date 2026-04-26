@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>USDT/RUB Calculator</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+</head>
+<body>
+    <main class="page">
+        <section class="card hero">
+            <div class="hero-topbar">
+                <div>
+                    <p class="eyebrow">USDT/RUB</p>
+                    <h1>Расчёт по сырому тексту</h1>
+                </div>
+                <a href="/history" class="button button-secondary button-link">История</a>
+            </div>
+            <p class="lead">Вставьте сообщение как есть, нажмите «Рассчитать» и получите готовый ответ в нужном формате.</p>
+        </section>
+
+        <section class="card">
+            <form action="/calculate" method="post" class="calc-form">
+                <label class="field-label" for="text">Исходный текст</label>
+                <textarea
+                    id="text"
+                    name="text"
+                    class="input-text"
+                    placeholder="Например:&#10;78.4+0.7%=78.949&#10;1327600/78.95=16815.706 крас"
+                    autocapitalize="off"
+                    autocomplete="off"
+                    autocorrect="off"
+                    spellcheck="false"
+                    required
+                >{{ input_text }}</textarea>
+
+                <button type="submit" class="button button-primary">Рассчитать</button>
+            </form>
+        </section>
+
+        {% if error_message %}
+        <section class="card result-card error-card">
+            <div class="result-header">
+                <h2>Ошибка расчёта</h2>
+            </div>
+            <pre class="result-box error-box">{{ error_message }}</pre>
+        </section>
+        {% endif %}
+
+        {% if result_text %}
+        <section class="card result-card">
+            <div class="result-header">
+                <h2>Результат</h2>
+                <button type="button" class="button button-secondary" onclick="copyNodeText('resultText', 'copyStatus')">Копировать результат</button>
+            </div>
+            <pre id="resultText" class="result-box">{{ result_text }}</pre>
+            <p id="copyStatus" class="copy-status" aria-live="polite"></p>
+        </section>
+        {% endif %}
+    </main>
+
+    <script>
+        function writeToClipboard(text, statusId) {
+            const statusNode = document.getElementById(statusId);
+            const showStatus = (message) => {
+                if (statusNode) {
+                    statusNode.textContent = message;
+                }
+            };
+
+            const fallbackCopy = () => {
+                const helper = document.createElement("textarea");
+                helper.value = text;
+                helper.setAttribute("readonly", "");
+                helper.style.position = "absolute";
+                helper.style.left = "-9999px";
+                document.body.appendChild(helper);
+                helper.select();
+                helper.setSelectionRange(0, helper.value.length);
+                const ok = document.execCommand("copy");
+                document.body.removeChild(helper);
+                showStatus(ok ? "Текст скопирован." : "Не удалось скопировать автоматически.");
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard
+                    .writeText(text)
+                    .then(() => showStatus("Текст скопирован."))
+                    .catch(() => fallbackCopy());
+                return;
+            }
+
+            fallbackCopy();
+        }
+
+        function copyNodeText(nodeId, statusId) {
+            const node = document.getElementById(nodeId);
+            if (!node) {
+                return;
+            }
+            writeToClipboard(node.innerText, statusId);
+        }
+    </script>
+</body>
+</html>
