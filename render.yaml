@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: usdt-rub-calculator
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python start.py
